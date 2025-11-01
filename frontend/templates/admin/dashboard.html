@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1 class="h2 mb-4">Admin Dashboard</h1>
+    
+    <!-- Stats Cards -->
+    <div class="row">
+        <div class="col-md-3 mb-4">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Total Users</h5>
+                    <h2 class="display-4">{{ stats.total_users }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-4">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Total Workshops</h5>
+                    <h2 class="display-4">{{ stats.total_workshops }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-4">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Total Registrations</h5>
+                    <h2 class="display-4">{{ stats.total_registrations }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-4">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Upcoming Workshops</h5>
+                    <h2 class="display-4">{{ stats.upcoming_workshops }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Activity -->
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Recent Users</h5>
+                </div>
+                <div class="card-body">
+                    {% for user in activity.recent_users %}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>{{ user.name }}</span>
+                        <small class="text-muted">{{ user.created_at.strftime('%m/%d') }}</small>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Recent Workshops</h5>
+                </div>
+                <div class="card-body">
+                    {% for workshop in activity.recent_workshops %}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>{{ workshop.title[:20] }}...</span>
+                        <small class="text-muted">{{ workshop.created_at.strftime('%m/%d') }}</small>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Recent Registrations</h5>
+                </div>
+                <div class="card-body">
+                    {% for reg in activity.recent_registrations %}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>User #{{ reg.user_id }}</span>
+                        <small class="text-muted">{{ reg.registered_at.strftime('%m/%d') }}</small>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

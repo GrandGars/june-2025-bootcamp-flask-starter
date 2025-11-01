@@ -1,0 +1,102 @@
+<!-- Enhanced Workshop Card Component -->
+<div class="col-md-6 col-lg-4 mb-4">
+    <div class="card workshop-card h-100 match-{% if match_score >= 3 %}high{% elif match_score >= 1 %}medium{% else %}low{% endif %}">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <div>
+                <span class="badge status-{{ workshop.status }} me-1">{{ workshop.status.title() }}</span>
+                <small class="text-light">{{ workshop.category.title() }}</small>
+            </div>
+            {% if match_score is defined %}
+            <span class="match-score match-{% if match_score >= 3 %}high{% elif match_score >= 1 %}medium{% else %}low{% endif %}">
+                ⭐ {{ match_score }}
+            </span>
+            {% endif %}
+        </div>
+        
+        <div class="card-body">
+            <h5 class="card-title">
+                <a href="{{ url_for('workshop_detail', workshop_id=workshop.workshop_id) }}" 
+                   class="text-decoration-none text-dark">
+                    {{ workshop.title }}
+                </a>
+            </h5>
+            
+            <p class="card-text text-muted small">
+                {{ workshop.description[:120] }}{% if workshop.description|length > 120 %}...{% endif %}
+            </p>
+            
+            <!-- Workshop Meta -->
+            <div class="workshop-meta small mb-3">
+                <div class="d-flex align-items-center mb-2">
+                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" 
+                         style="width: 24px; height: 24px; font-size: 0.7rem;">
+                        {{ workshop.host.name[0] }}
+                    </div>
+                    <span>{{ workshop.host.name }}</span>
+                </div>
+                
+                <div class="row g-2 text-muted">
+                    <div class="col-12">
+                        <i class="fas fa-calendar me-1"></i>
+                        {{ workshop.date_time.strftime('%b %d, %Y') }}
+                    </div>
+                    <div class="col-12">
+                        <i class="fas fa-clock me-1"></i>
+                        {{ workshop.date_time.strftime('%I:%M %p') }}
+                    </div>
+                    <div class="col-12">
+                        <i class="fas fa-map-marker-alt me-1"></i>
+                        {{ workshop.location }}
+                    </div>
+                    <div class="col-12">
+                        <i class="fas fa-users me-1"></i>
+                        <span class="text-{% if workshop.registrations|length < workshop.max_participants %}success{% else %}danger{% endif %}">
+                            {{ workshop.registrations|length }}/{{ workshop.max_participants }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Matching Skills -->
+            {% if matching_skills %}
+            <div class="mb-3">
+                <small class="text-muted">Matching skills:</small>
+                <div class="d-flex flex-wrap gap-1 mt-1">
+                    {% for skill in matching_skills %}
+                        <span class="badge skill-badge">{{ skill }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="card-footer bg-transparent">
+            <div class="d-flex justify-content-between align-items-center">
+                <small class="text-muted">
+                    <i class="fas fa-calendar-plus me-1"></i>
+                    {{ workshop.created_at.strftime('%b %d') }}
+                </small>
+                
+                <div>
+                    {% if current_user.is_authenticated %}
+                        {% if workshop.host_id == current_user.user_id %}
+                            <span class="badge bg-info">Your Workshop</span>
+                        {% else %}
+                            {% set user_registration = workshop.registrations|selectattr('user_id', 'equalto', current_user.user_id)|list %}
+                            {% if user_registration %}
+                                <span class="badge bg-success">Registered</span>
+                            {% else %}
+                                <a href="{{ url_for('register_for_workshop', workshop_id=workshop.workshop_id) }}" 
+                                   class="btn btn-sm btn-primary {{ 'disabled' if workshop.registrations|length >= workshop.max_participants else '' }}">
+                                    {{ 'Join' if workshop.registrations|length < workshop.max_participants else 'Full' }}
+                                </a>
+                            {% endif %}
+                        {% endif %}
+                    {% else %}
+                        <a href="{{ url_for('login') }}" class="btn btn-sm btn-outline-primary">Login to Join</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

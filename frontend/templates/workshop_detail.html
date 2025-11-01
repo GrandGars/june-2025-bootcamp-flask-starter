@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">{{ workshop.title }}</h4>
+                <span class="badge bg-{{ 'primary' if workshop.status == 'scheduled' else 'secondary' }}">
+                    {{ workshop.status.title() }}
+                </span>
+            </div>
+            <div class="card-body">
+                <div class="mb-4">
+                    <h5>Description</h5>
+                    <p class="card-text">{{ workshop.description }}</p>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>Workshop Details</h5>
+                        <ul class="list-unstyled">
+                            <li class="mb-2">
+                                <strong>👤 Host:</strong> 
+                                <a href="{{ url_for('public_profile', user_id=workshop.host.user_id) }}" class="text-decoration-none">
+                                    {{ workshop.host.name }}
+                                </a>
+                            </li>
+                            <li class="mb-2">
+                                <strong>📅 Date & Time:</strong> 
+                                {{ workshop.date_time.strftime('%B %d, %Y at %I:%M %p') }}
+                            </li>
+                            <li class="mb-2">
+                                <strong>📍 Location:</strong> {{ workshop.location }}
+                            </li>
+                            <li class="mb-2">
+                                <strong>🏷️ Category:</strong> 
+                                <span class="badge bg-info">{{ workshop.category.title() }}</span>
+                            </li>
+                            <li class="mb-2">
+                                <strong>👥 Participants:</strong> 
+                                <span class="text-{{ 'success' if workshop.registrations|length < workshop.max_participants else 'danger' }}">
+                                    {{ workshop.registrations|length }}/{{ workshop.max_participants }}
+                                </span>
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h5>About the Host</h5>
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center me-3" 
+                                 style="width: 50px; height: 50px; font-size: 1.2rem;">
+                                {{ workshop.host.name[0] }}
+                            </div>
+                            <div>
+                                <h6 class="mb-0">{{ workshop.host.name }}</h6>
+                                <small class="text-muted">Member since {{ workshop.host.created_at.strftime('%B %Y') }}</small>
+                            </div>
+                        </div>
+                        
+                        {% if workshop.host.bio %}
+                            <p class="small">{{ workshop.host.bio }}</p>
+                        {% endif %}
+                        
+                        {% if workshop.host.skills_offering %}
+                            <div class="mt-2">
+                                <strong>Skills offered:</strong>
+                                <div class="d-flex flex-wrap gap-1 mt-1">
+                                    {% for skill in workshop.host.skills_offering.split(',') %}
+                                        {% if skill.strip() %}
+                                            <span class="badge bg-success">{{ skill.strip() }}</span>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Participants List -->
+        {% if workshop.registrations %}
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">Registered Participants ({{ workshop.registrations|length }})</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for registration in workshop.registrations %}
+                    <div class="col-md-6 mb-2">
+                        <div class="d-flex align-items-center">
+                            <div class="bg-secondary text-white rounded-circle d-inline-flex align-items-center justify-content-center me-2" 
+                                 style="width: 40px; height: 40px; font-size: 1rem;">
+                                {{ registration.user.name[0] }}
+                            </div>
+                            <div>
+                                <a href="{{ url_for('public_profile', user_id=registration.user.user_id) }}" 
+                                   class="text-decoration-none">
+                                    {{ registration.user.name }}
+                                </a>
+                                <br>
+                                <small class="text-muted">Registered {{ registration.registered_at.strftime('%b %d') }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Join This Workshop</h5>
+            </div>
+            <div class="card-body">
+                {% if current_user.is_authenticated %}
+                    {% if workshop.host_id == current_user.user_id %}
+                        <div class="alert alert-info">
+                            <strong>This is your workshop!</strong><br>
+                            You're hosting this workshop.
+                        </div>
+                        <a href="{{ url_for('workshops') }}" class="btn btn-outline-primary w-100">Browse Other Workshops</a>
+                    
+                    {% else %}
+                        {% set user_registration = workshop.registrations|selectattr('user_id', 'equalto', current_user.user_id)|list %}
+                        
+                        {% if user_registration %}
+                            <div class="alert alert-success">
+                                <strong>You're registered!</strong><br>
+                                You'll receive a reminder before the workshop.
+                            </div>
+                            <button class="btn btn-success w-100" disabled>Already Registered</button>
+                        
+                        {% else %}
+                            {% if workshop.registrations|length >= workshop.max_participants %}
+                                <div class="alert alert-warning">
+                                    <strong>Workshop Full</strong><br>
+                                    This workshop has reached its maximum capacity.
+                                </div>
+                                <button class="btn btn-secondary w-100" disabled>Workshop Full</button>
+                            
+                            {% else %}
+                                <p class="card-text">Ready to learn from {{ workshop.host.name }}?</p>
+                                <p class="text-muted small">
+                                    Spots remaining: <strong>{{ workshop.max_participants - workshop.registrations|length }}</strong>
+                                </p>
+                                <a href="{{ url_for('register_for_workshop', workshop_id=workshop.workshop_id) }}" 
+                                   class="btn btn-primary w-100">
+                                    Register for Workshop
+                                </a>
+                            {% endif %}
+                        {% endif %}
+                    {% endif %}
+                
+                {% else %}
+                    <p class="card-text">Join SkillShare to register for this workshop!</p>
+                    <a href="{{ url_for('login') }}" class="btn btn-primary w-100 mb-2">Login to Register</a>
+                    <a href="{{ url_for('register') }}" class="btn btn-outline-primary w-100">Create Account</a>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-body">
+                <h6>Share This Workshop</h6>
+                <p class="text-muted small">Invite others to join this learning experience!</p>
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-secondary" onclick="copyWorkshopLink()">
+                        📋 Copy Workshop Link
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function copyWorkshopLink() {
+    const url = window.location.href;
+    navigator.clipboard.writeText(url).then(function() {
+        alert('Workshop link copied to clipboard!');
+    }, function() {
+        alert('Failed to copy link. Please copy the URL manually.');
+    });
+}
+</script>
+{% endblock %}

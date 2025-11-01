@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center">
+                <div>
+                    <h1 class="display-5 fw-bold">Discover Workshops</h1>
+                    <p class="lead text-muted">Learn new skills from community experts</p>
+                </div>
+                {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('create_workshop') }}" class="btn btn-success btn-lg mt-2 mt-md-0">
+                        <i class="fas fa-plus me-2"></i>Host a Workshop
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Enhanced Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title mb-3">
+                <i class="fas fa-filter me-2"></i>Filter Workshops
+            </h5>
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label small text-muted">Category</label>
+                    <select class="form-select" id="categoryFilter">
+                        <option value="">All Categories</option>
+                        <option value="coding">Coding & Technology</option>
+                        <option value="cooking">Cooking & Baking</option>
+                        <option value="arts">Arts & Crafts</option>
+                        <option value="business">Business & Career</option>
+                        <option value="health">Health & Wellness</option>
+                        <option value="language">Language Learning</option>
+                        <option value="music">Music & Dance</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small text-muted">Search</label>
+                    <input type="text" class="form-control" id="searchFilter" placeholder="Search workshops...">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small text-muted">Skills</label>
+                    <input type="text" class="form-control" id="skillsFilter" placeholder="Filter by skills...">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small text-muted">Status</label>
+                    <select class="form-select" id="statusFilter">
+                        <option value="scheduled">Upcoming</option>
+                        <option value="all">All Workshops</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+<!-- Workshops List -->
+{% if workshops %}
+    <div class="row" id="workshopsContainer">
+        {% for workshop in workshops %}
+        <div class="col-md-6 mb-4 workshop-item" 
+             data-category="{{ workshop.category }}"
+             data-status="{{ workshop.status }}">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span class="badge bg-{{ 'primary' if workshop.status == 'scheduled' else 'secondary' }}">
+                        {{ workshop.status.title() }}
+                    </span>
+                    <small class="text-muted">{{ workshop.category.title() }}</small>
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <a href="{{ url_for('workshop_detail', workshop_id=workshop.workshop_id) }}" class="text-decoration-none">
+                            {{ workshop.title }}
+                        </a>
+                    </h5>
+                    <p class="card-text">{{ workshop.description[:150] }}{% if workshop.description|length > 150 %}...{% endif %}</p>
+                    
+                    <div class="workshop-details">
+                        <p class="mb-1">
+                            <strong>👤 Host:</strong> 
+                            <a href="{{ url_for('public_profile', user_id=workshop.host.user_id) }}" class="text-decoration-none">
+                                {{ workshop.host.name }}
+                            </a>
+                        </p>
+                        <p class="mb-1"><strong>📅 Date:</strong> {{ workshop.date_time.strftime('%B %d, %Y at %I:%M %p') }}</p>
+                        <p class="mb-1"><strong>📍 Location:</strong> {{ workshop.location }}</p>
+                        <p class="mb-1"><strong>👥 Participants:</strong> 
+                            <span class="text-{{ 'success' if workshop.registrations|length < workshop.max_participants else 'danger' }}">
+                                {{ workshop.registrations|length }}/{{ workshop.max_participants }}
+                            </span>
+                        </p>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">Created {{ workshop.created_at.strftime('%b %d, %Y') }}</small>
+                        <div>
+                            {% if current_user.is_authenticated %}
+                                {% if workshop.host_id == current_user.user_id %}
+                                    <span class="badge bg-info">Your Workshop</span>
+                                {% else %}
+                                    <a href="{{ url_for('register_for_workshop', workshop_id=workshop.workshop_id) }}" 
+                                       class="btn btn-sm btn-primary {{ 'disabled' if workshop.registrations|length >= workshop.max_participants else '' }}">
+                                        {{ 'Join Workshop' if workshop.registrations|length < workshop.max_participants else 'Full' }}
+                                    </a>
+                                {% endif %}
+                            {% else %}
+                                <a href="{{ url_for('login') }}" class="btn btn-sm btn-outline-primary">Login to Join</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="text-center py-5">
+        <h3>No workshops available yet</h3>
+        <p class="text-muted">Be the first to host a workshop and share your skills!</p>
+        {% if current_user.is_authenticated %}
+            <a href="{{ url_for('create_workshop') }}" class="btn btn-success btn-lg">Host the First Workshop</a>
+        {% else %}
+            <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg">Join to Host Workshops</a>
+        {% endif %}
+    </div>
+{% endif %}
+
+<!-- JavaScript for filtering -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const categoryFilter = document.getElementById('categoryFilter');
+    const searchFilter = document.getElementById('searchFilter');
+    const statusFilter = document.getElementById('statusFilter');
+    const workshopItems = document.querySelectorAll('.workshop-item');
+    const skillsFilter = document.getElementById('skillsFilter');
+
+    function filterWorkshops() {
+        const categoryValue = categoryFilter.value;
+        const searchValue = searchFilter.value.toLowerCase();
+        const statusValue = statusFilter.value;
+        const skillsValue = skillsFilter.value.toLowerCase();
+
+        workshopItems.forEach(item => {
+            const category = item.getAttribute('data-category');
+            const status = item.getAttribute('data-status');
+            const title = item.querySelector('.card-title').textContent.toLowerCase();
+            const description = item.querySelector('.card-text').textContent.toLowerCase();
+            const skills = item.querySelector('.workshop-details').textContent.toLowerCase();
+
+            const categoryMatch = !categoryValue || category === categoryValue;
+            const statusMatch = statusValue === 'all' || status === 'scheduled';
+            const searchMatch = !searchValue || title.includes(searchValue) || description.includes(searchValue);
+            const skillsMatch = !skillsValue || skills.includes(skillsValue);
+
+            if (categoryMatch && statusMatch && searchMatch) {
+                item.style.display = 'block';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
+
+    categoryFilter.addEventListener('change', filterWorkshops);
+    searchFilter.addEventListener('input', filterWorkshops);
+    statusFilter.addEventListener('change', filterWorkshops);
+    skillsFilter.addEventListener('input', filterWorkshops);
+});
+</script>
+{% endblock %}

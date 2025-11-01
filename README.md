@@ -20,4 +20,4 @@
 - [ ] Feature 3 
 
 ## Contributors
-- Team member names & roles
+Amos Kiserian

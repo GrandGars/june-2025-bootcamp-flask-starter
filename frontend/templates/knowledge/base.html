@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center">
+                <div>
+                    <h1 class="display-5 fw-bold">Community Knowledge Base</h1>
+                    <p class="lead text-muted">Share and learn from community-created tutorials, guides, and resources.</p>
+                </div>
+                {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('create_article') }}" class="btn btn-success btn-lg mt-2 mt-md-0">
+                        <i class="fas fa-plus me-2"></i>Write Article
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <form method="GET" class="d-flex">
+                        <input type="text" name="search" class="form-control me-2" placeholder="Search articles..." value="{{ search }}">
+                        <button type="submit" class="btn btn-primary">Search</button>
+                    </form>
+                </div>
+                <div class="col-md-6">
+                    <select class="form-select" onchange="filterByCategory(this)">
+                        <option value="">All Categories</option>
+                        <option value="programming" {% if category == 'programming' %}selected{% endif %}>Programming</option>
+                        <option value="design" {% if category == 'design' %}selected{% endif %}>Design</option>
+                        <option value="business" {% if category == 'business' %}selected{% endif %}>Business</option>
+                        <option value="language" {% if category == 'language' %}selected{% endif %}>Language</option>
+                        <option value="science" {% if category == 'science' %}selected{% endif %}>Science</option>
+                        <option value="arts" {% if category == 'arts' %}selected{% endif %}>Arts</option>
+                        <option value="health" {% if category == 'health' %}selected{% endif %}>Health</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Articles Grid -->
+    {% if articles.items %}
+        <div class="row">
+            {% for article in articles.items %}
+            <div class="col-lg-6 mb-4">
+                <div class="card h-100 knowledge-card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="badge bg-primary">{{ article.category.title() }}</span>
+                            <small class="text-muted">{{ article.views }} views</small>
+                        </div>
+                        
+                        <h5 class="card-title">
+                            <a href="{{ url_for('knowledge_article', article_id=article.article_id) }}" class="text-decoration-none">
+                                {{ article.title }}
+                            </a>
+                        </h5>
+                        
+                        <p class="card-text text-muted">
+                            {{ article.content|striptags|truncate(200) }}
+                        </p>
+                        
+                        {% if article.tags %}
+                        <div class="mb-3">
+                            {% for tag in article.tags.split(',') %}
+                                <span class="badge bg-light text-dark me-1">{{ tag.strip() }}</span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="card-footer bg-transparent">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center me-2" 
+                                     style="width: 32px; height: 32px; font-size: 0.8rem;">
+                                    {{ article.author.name[0] }}
+                                </div>
+                                <small>{{ article.author.name }}</small>
+                            </div>
+                            <small class="text-muted">{{ article.created_at.strftime('%b %d, %Y') }}</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if articles.pages > 1 %}
+        <nav aria-label="Articles pagination" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if articles.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('knowledge_base', page=articles.prev_num, category=category, search=search) }}">Previous</a>
+                    </li>
+                {% endif %}
+                
+                {% for page_num in articles.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+                    {% if page_num %}
+                        {% if articles.page == page_num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                        {% else %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('knowledge_base', page=page_num, category=category, search=search) }}">{{ page_num }}</a>
+                            </li>
+                        {% endif %}
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">...</span>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if articles.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('knowledge_base', page=articles.next_num, category=category, search=search) }}">Next</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    {% else %}
+        <!-- Empty State -->
+        <div class="text-center py-5">
+            <i class="fas fa-book-open fa-4x text-muted mb-4"></i>
+            <h3>No articles yet</h3>
+            <p class="text-muted mb-4">Be the first to share your knowledge with the community!</p>
+            {% if current_user.is_authenticated %}
+                <a href="{{ url_for('create_article') }}" class="btn btn-success btn-lg">
+                    <i class="fas fa-plus me-2"></i>Write First Article
+                </a>
+            {% else %}
+                <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-user-plus me-2"></i>Join to Contribute
+                </a>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+
+<script>
+function filterByCategory(select) {
+    const category = select.value;
+    const baseUrl = '{{ url_for("knowledge_base") }}';
+    window.location.href = `${baseUrl}?category=${category}`;
+}
+</script>
+{% endblock %}

@@ -1,0 +1,287 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <!-- Main Article Content -->
+        <div class="col-lg-8">
+            <!-- Article Header -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <span class="badge bg-primary">{{ article.category.title() }}</span>
+                        <div class="text-muted">
+                            <small>
+                                <i class="fas fa-eye me-1"></i>{{ article.views }} views
+                                <i class="fas fa-clock ms-3 me-1"></i>{{ article.created_at.strftime('%b %d, %Y') }}
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <h1 class="display-6 mb-3">{{ article.title }}</h1>
+                    
+                    <!-- Author Info -->
+                    <div class="d-flex align-items-center mb-4">
+                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" 
+                             style="width: 50px; height: 50px; font-size: 1.2rem;">
+                            {{ article.author.name[0] }}
+                        </div>
+                        <div>
+                            <h6 class="mb-0">
+                                <a href="{{ url_for('public_profile', user_id=article.author.user_id) }}" class="text-decoration-none">
+                                    {{ article.author.name }}
+                                </a>
+                            </h6>
+                            <small class="text-muted">
+                                {% if article.author.skills_offering %}
+                                    Specializes in: {{ article.author.skills_offering }}
+                                {% endif %}
+                            </small>
+                        </div>
+                    </div>
+
+                    <!-- Tags -->
+                    {% if article.tags %}
+                    <div class="mb-4">
+                        {% for tag in article.tags.split(',') %}
+                            <span class="badge bg-light text-dark me-1">{{ tag.strip() }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Edit Button for Author -->
+                    {% if current_user.is_authenticated and current_user.user_id == article.author_id %}
+                    <div class="mb-4">
+                        <a href="{{ url_for('edit_article', article_id=article.article_id) }}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-edit me-1"></i>Edit Article
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Article Content -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="article-content">
+                        {{ article.content|replace('\n', '<br>')|safe }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Article Actions -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <small class="text-muted">
+                                Last updated: {{ article.updated_at.strftime('%b %d, %Y at %I:%M %p') }}
+                            </small>
+                        </div>
+                        <div>
+                            <!-- Share buttons can be added here -->
+                            <button class="btn btn-outline-secondary btn-sm">
+                                <i class="fas fa-share-alt me-1"></i>Share
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comments Section -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-comments me-2"></i>
+                        Discussion ({{ article.comments|length }})
+                    </h5>
+                </div>
+                
+                <div class="card-body">
+                    <!-- Comment Form -->
+                    {% if current_user.is_authenticated %}
+                    <div class="mb-4">
+                        <form method="POST" action="{{ url_for('add_comment', article_id=article.article_id) }}">
+                            {{ form.hidden_tag() }}
+                            <div class="mb-3">
+                                {{ form.content.label(class="form-label") }}
+                                {{ form.content(class="form-control", rows="3", placeholder="Share your thoughts, ask questions, or provide feedback...") }}
+                                {% if form.content.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.content.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="d-flex justify-content-end">
+                                {{ form.submit(class="btn btn-primary") }}
+                            </div>
+                        </form>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <a href="{{ url_for('login') }}" class="alert-link">Log in</a> to join the discussion and share your thoughts.
+                    </div>
+                    {% endif %}
+
+                    <!-- Comments List -->
+                    {% if article.comments %}
+                        <div class="comments-list">
+                            {% for comment in article.comments|sort(attribute='created_at', reverse=true) %}
+                            <div class="comment-item border-bottom pb-3 mb-3">
+                                <div class="d-flex">
+                                    <div class="flex-shrink-0">
+                                        <div class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center me-3" 
+                                             style="width: 40px; height: 40px; font-size: 0.9rem;">
+                                            {{ comment.user.name[0] }}
+                                        </div>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <h6 class="mb-0">
+                                                <a href="{{ url_for('public_profile', user_id=comment.user.user_id) }}" class="text-decoration-none">
+                                                    {{ comment.user.name }}
+                                                </a>
+                                            </h6>
+                                            <small class="text-muted">{{ comment.created_at.strftime('%b %d, %Y at %I:%M %p') }}</small>
+                                        </div>
+                                        <p class="mb-0">{{ comment.content }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-comments fa-2x text-muted mb-3"></i>
+                            <p class="text-muted">No comments yet. Be the first to start the discussion!</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Author Info Card -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">About the Author</h6>
+                </div>
+                <div class="card-body text-center">
+                    <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
+                         style="width: 80px; height: 80px; font-size: 2rem;">
+                        {{ article.author.name[0] }}
+                    </div>
+                    <h5>{{ article.author.name }}</h5>
+                    
+                    {% if article.author.bio %}
+                        <p class="text-muted small">{{ article.author.bio }}</p>
+                    {% endif %}
+                    
+                    {% if article.author.skills_offering %}
+                        <div class="mt-3">
+                            <strong>Skills:</strong>
+                            <div class="d-flex flex-wrap gap-1 mt-1 justify-content-center">
+                                {% for skill in article.author.skills_offering.split(',') %}
+                                    <span class="badge bg-success">{{ skill.strip() }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="mt-3">
+                        <a href="{{ url_for('public_profile', user_id=article.author.user_id) }}" class="btn btn-outline-primary btn-sm">
+                            View Full Profile
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- More from Author -->
+            {% if article.author.articles|length > 1 %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">More from {{ article.author.name }}</h6>
+                </div>
+                <div class="card-body">
+                    {% for other_article in article.author.articles %}
+                        {% if other_article.article_id != article.article_id %}
+                        <div class="mb-2">
+                            <a href="{{ url_for('knowledge_article', article_id=other_article.article_id) }}" class="text-decoration-none">
+                                <small>{{ other_article.title }}</small>
+                            </a>
+                            <br>
+                            <small class="text-muted">{{ other_article.created_at.strftime('%b %d') }}</small>
+                        </div>
+                        {% endif %}
+                        {% if loop.index >= 3 %}{% break %}{% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Related Articles -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Related Articles</h6>
+                </div>
+                <div class="card-body">
+                    {% set related_articles = KnowledgeArticle.query.filter_by(category=article.category).filter(KnowledgeArticle.article_id != article.article_id).limit(3).all() %}
+                    {% if related_articles %}
+                        {% for related in related_articles %}
+                        <div class="mb-2">
+                            <a href="{{ url_for('knowledge_article', article_id=related.article_id) }}" class="text-decoration-none">
+                                <small>{{ related.title }}</small>
+                            </a>
+                            <br>
+                            <small class="text-muted">by {{ related.author.name }}</small>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <small class="text-muted">No related articles yet.</small>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Custom CSS for article content -->
+<style>
+.article-content {
+    line-height: 1.7;
+    font-size: 1.1rem;
+}
+
+.article-content h1, .article-content h2, .article-content h3 {
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.article-content p {
+    margin-bottom: 1rem;
+}
+
+.article-content ul, .article-content ol {
+    margin-bottom: 1rem;
+    padding-left: 2rem;
+}
+
+.article-content code {
+    background-color: #f8f9fa;
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+}
+
+.article-content pre {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin-bottom: 1rem;
+}
+</style>
+{% endblock %}

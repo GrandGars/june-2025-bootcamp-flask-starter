@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <h2>My Dashboard</h2>
+        
+        <!-- Workshops I'm Hosting -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Workshops I'm Hosting</h5>
+            </div>
+            <div class="card-body">
+                {% if current_user.hosted_workshops %}
+                    <div class="row">
+                        {% for workshop in current_user.hosted_workshops %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6 class="card-title">
+                                        <a href="{{ url_for('workshop_detail', workshop_id=workshop.workshop_id) }}">
+                                            {{ workshop.title }}
+                                        </a>
+                                    </h6>
+                                    <p class="card-text small">
+                                        <strong>Date:</strong> {{ workshop.date_time.strftime('%b %d, %Y') }}<br>
+                                        <strong>Participants:</strong> {{ workshop.registrations|length }}/{{ workshop.max_participants }}
+                                    </p>
+                                    <span class="badge bg-{{ 'primary' if workshop.status == 'scheduled' else 'secondary' }}">
+                                        {{ workshop.status }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted">You haven't hosted any workshops yet.</p>
+                    <a href="{{ url_for('create_workshop') }}" class="btn btn-primary">Host Your First Workshop</a>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Workshops I'm Attending -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Workshops I'm Attending</h5>
+            </div>
+            <div class="card-body">
+                {% set my_registrations = [] %}
+                {% for workshop in workshops %}
+                    {% for registration in workshop.registrations %}
+                        {% if registration.user_id == current_user.user_id %}
+                            {% set _ = my_registrations.append(workshop) %}
+                        {% endif %}
+                    {% endfor %}
+                {% endfor %}
+                
+                {% if my_registrations %}
+                    <div class="row">
+                        {% for workshop in my_registrations %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6 class="card-title">
+                                        <a href="{{ url_for('workshop_detail', workshop_id=workshop.workshop_id) }}">
+                                            {{ workshop.title }}
+                                        </a>
+                                    </h6>
+                                    <p class="card-text small">
+                                        <strong>Host:</strong> {{ workshop.host.name }}<br>
+                                        <strong>Date:</strong> {{ workshop.date_time.strftime('%b %d, %Y') }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted">You haven't registered for any workshops yet.</p>
+                    <a href="{{ url_for('workshops') }}" class="btn btn-primary">Browse Workshops</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <h5>Quick Actions</h5>
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('create_workshop') }}" class="btn btn-success">Host a Workshop</a>
+                    <a href="{{ url_for('workshops') }}" class="btn btn-primary">Browse Workshops</a>
+                    <a href="{{ url_for('profile') }}" class="btn btn-outline-primary">Edit Profile</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
